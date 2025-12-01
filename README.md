@@ -6,7 +6,7 @@
 ![Shell](https://img.shields.io/badge/shell-bash-green.svg)
 ![Btrfs](https://img.shields.io/badge/filesystem-btrfs-orange.svg)
 
-A robust and automated Btrfs snapshot backup solution with incremental transfer capabilities.
+A robust and automated Btrfs snapshot backup solution with comprehensive snapshot management.
 
 English | [简体中文](README_zh.md)
 
@@ -18,17 +18,20 @@ English | [简体中文](README_zh.md)
 
 ## 📋 Overview
 
-**btrfs-base-backup-script** is a comprehensive backup solution designed for Btrfs filesystems. It provides automated snapshot creation and efficient incremental transfer capabilities, making it ideal for system administrators and power users who need reliable backup workflows.
+**btrfs-base-backup-script** is a comprehensive backup solution designed for Btrfs filesystems. It provides automated snapshot creation, listing, restoration, deletion, and efficient incremental transfer capabilities, making it ideal for system administrators and power users who need reliable backup workflows.
 
 The project consists of two main components:
 
-- **Backup Script**: Creates read-only Btrfs snapshots with timestamp-based naming
-- **Transfer Script**: Performs incremental or full transfers to external storage
+- **Backup Script** (`backup.sh`): Automatically creates read-only Btrfs snapshots with timestamp-based naming
+- **Control Tool** (`bbbsctl.sh`): Provides snapshot management including list, size calculation, restore, delete, and transfer
 
 ## ✨ Features
 
-- 🔄 **Automated Snapshots**: Create timestamped, read-only Btrfs snapshots
+- 🔄 **Automated Snapshots**: Create read-only Btrfs snapshots with ISO 8601 timestamps
+- 📋 **Snapshot Management**: List, view size, restore, and delete snapshots
 - 📊 **Incremental Transfers**: Efficient incremental backups using parent snapshots
+- 🗑️ **Flexible Deletion**: Delete by days, count, or specific snapshots
+- 🌍 **Multi-language Support**: Automatic Chinese/English interface based on locale
 - 🎨 **Colorful Logging**: Beautiful, color-coded output for easy monitoring
 - ⚙️ **Systemd Integration**: Built-in timer and service units for automation
 - 🛡️ **Error Handling**: Robust error checking and automatic cleanup
@@ -75,9 +78,9 @@ The project consists of two main components:
 
 ## 🎯 Usage
 
-### Manual Backup
+### Create Snapshots
 
-Create a snapshot manually:
+Use `backup.sh` to manually create snapshots:
 
 ```bash
 sudo /opt/btrfs-base-backup-script/scripts/backup.sh
@@ -90,12 +93,55 @@ This will:
 3. Create a read-only snapshot with ISO 8601 timestamp
 4. Unmount and cleanup
 
-### Transfer Snapshots
+### Manage Snapshots
 
-Transfer snapshots to external storage:
+Use `bbbsctl.sh` control tool to manage snapshots:
+
+**Show help information**:
 
 ```bash
-sudo /opt/btrfs-base-backup-script/scripts/transfer.sh /path/to/destination
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh help
+```
+
+**List all snapshots**:
+
+```bash
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh list
+```
+
+**Calculate snapshot size**:
+
+```bash
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh size 2025-12-01T10:30:00+08:00
+```
+
+**Restore snapshot**:
+
+```bash
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh restore 2025-12-01T10:30:00+08:00 /mnt/restored
+```
+
+**Delete snapshots**:
+
+```bash
+# Delete specific snapshot
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh delete --snapshot 2025-12-01T10:30:00+08:00
+
+# Keep snapshots within 30 days, delete older
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh delete --keep-days 30
+
+# Keep the newest 10 snapshots, delete older
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh delete --keep-count 10
+
+# Delete all snapshots (confirmation required)
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh delete --all
+```
+
+**Transfer snapshots**:
+
+```bash
+# Transfer snapshots to external storage
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh transfer /mnt/external/backups
 ```
 
 The script automatically:
@@ -160,7 +206,7 @@ btrfs-base-backup-script/
 │   └── btrfs-base-backup.conf        # Configuration file
 ├── scripts/
 │   ├── backup.sh                      # Snapshot creation script
-│   └── transfer.sh                    # Incremental transfer script
+│   └── bbbsctl.sh                     # Snapshot management control tool
 └── systemd/
     ├── btrfs-base-backup.service     # Systemd service unit
     └── btrfs-base-backup.timer       # Systemd timer unit
@@ -168,20 +214,20 @@ btrfs-base-backup-script/
 
 ## 🔍 How It Works
 
-### Backup Process
+### Snapshot Creation Process (`backup.sh`)
 
 1. **Device Detection**: Identifies the Btrfs device containing the source path
 2. **Root Mounting**: Mounts the Btrfs root (`subvol=/`) to a temporary mount point
 3. **Snapshot Creation**: Creates a read-only snapshot with ISO 8601 timestamp
 4. **Cleanup**: Unmounts the temporary mount point
 
-### Transfer Process
+### Snapshot Management Process (`bbbsctl.sh`)
 
-1. **Mount Verification**: Ensures Btrfs root is accessible
-2. **Snapshot Discovery**: Scans for available snapshots
-3. **Parent Detection**: Identifies common parent for incremental transfer
-4. **Transfer Execution**: Uses `btrfs send/receive` for efficient data transfer
-5. **Automatic Cleanup**: Unmounts if mounted by the script
+- **List Snapshots**: Scans all snapshots in the backup directory and displays snapshot information
+- **Calculate Size**: Calculates disk space used by specified snapshot
+- **Restore Snapshot**: Restores a snapshot to a specified location
+- **Delete Snapshots**: Removes snapshots based on various criteria (days, count, specific snapshot, or all)
+- **Transfer Snapshots**: Performs incremental or full transfer to external storage
 
 ## 🛠️ Advanced Usage
 
@@ -198,8 +244,8 @@ sudo systemctl edit btrfs-base-backup.timer
 Create multiple configuration files and service units for different subvolumes:
 
 ```bash
-cp config/btrfs-base-backup.conf config/btrfs-base-backup-home.conf
-cp systemd/btrfs-base-backup.service systemd/btrfs-base-backup-home.service
+sudo cp config/btrfs-base-backup.conf config/btrfs-base-backup-home.conf
+sudo cp systemd/btrfs-base-backup.service systemd/btrfs-base-backup-home.service
 # Edit configurations and service files accordingly
 ```
 
@@ -208,8 +254,27 @@ cp systemd/btrfs-base-backup.service systemd/btrfs-base-backup-home.service
 Combine with SSH for remote backups:
 
 ```bash
+# Method 1: Direct btrfs send/receive through SSH
 sudo btrfs send /mnt/rootfs/backups/2025-12-01T10:00:00+08:00 | \
   ssh user@remote "btrfs receive /mnt/backup"
+
+# Method 2: Mount remote directory first, then use bbbsctl to transfer
+sudo sshfs user@remote:/mnt/backup /mnt/remote
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh transfer /mnt/remote
+```
+
+### Regular Cleanup of Old Snapshots
+
+Create a periodic cleanup task to keep only the last 30 days of snapshots:
+
+```bash
+# Create cleanup script
+echo '#!/bin/bash' | sudo tee /opt/btrfs-base-backup-script/scripts/cleanup.sh
+echo '/opt/btrfs-base-backup-script/scripts/bbbsctl.sh delete --keep-days 30' | sudo tee -a /opt/btrfs-base-backup-script/scripts/cleanup.sh
+sudo chmod +x /opt/btrfs-base-backup-script/scripts/cleanup.sh
+
+# Add to crontab (run every Sunday at 3 AM)
+(sudo crontab -l 2>/dev/null; echo "0 3 * * 0 /opt/btrfs-base-backup-script/scripts/cleanup.sh") | sudo crontab -
 ```
 
 ## 🤝 Contributing

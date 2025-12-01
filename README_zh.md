@@ -6,7 +6,7 @@
 ![Shell](https://img.shields.io/badge/shell-bash-green.svg)
 ![Btrfs](https://img.shields.io/badge/filesystem-btrfs-orange.svg)
 
-一个强大且自动化的 Btrfs 快照备份解决方案，支持增量传输功能。
+一个强大且自动化的 Btrfs 快照备份解决方案，提供完整的快照管理功能。
 
 [English](README.md) | 简体中文
 
@@ -18,17 +18,20 @@
 
 ## 📋 概述
 
-**btrfs-base-backup-script** 是专为 Btrfs 文件系统设计的综合备份解决方案。它提供自动化快照创建和高效的增量传输功能，非常适合需要可靠备份工作流的系统管理员和高级用户。
+**btrfs-base-backup-script** 是专为 Btrfs 文件系统设计的综合备份解决方案。它提供自动化快照创建、列表查看、恢复、删除和增量传输等完整的备份管理功能，非常适合需要可靠备份工作流的系统管理员和高级用户。
 
 该项目包含两个主要组件：
 
-- **备份脚本**：创建带有时间戳命名的只读 Btrfs 快照
-- **传输脚本**：执行增量或完整传输到外部存储
+- **备份脚本** (`backup.sh`)：自动创建带有时间戳命名的只读 Btrfs 快照
+- **控制工具** (`bbbsctl.sh`)：提供快照的列表、大小计算、恢复、删除和传输等管理功能
 
 ## ✨ 特性
 
-- 🔄 **自动化快照**：创建带时间戳的只读 Btrfs 快照
-- 📊 **增量传输**：使用父快照进行高效的增量备份
+- 🔄 **自动化快照**：创建带 ISO 8601 时间戳的只读 Btrfs 快照
+- 📋 **快照管理**：列出、查看大小、恢复和删除快照
+- 📊 **增量传输**：使用父快照进行高效的增量备份传输
+- 🗑️ **灵活删除**：支持按天数、数量或指定快照删除
+- 🌍 **多语言支持**：根据系统语言环境自动切换中英文界面
 - 🎨 **彩色日志**：美观的彩色输出，便于监控
 - ⚙️ **Systemd 集成**：内置定时器和服务单元以实现自动化
 - 🛡️ **错误处理**：健壮的错误检查和自动清理
@@ -75,9 +78,9 @@
 
 ## 🎯 使用
 
-### 手动备份
+### 创建快照
 
-手动创建快照：
+使用 `backup.sh` 手动创建快照：
 
 ```bash
 sudo /opt/btrfs-base-backup-script/scripts/backup.sh
@@ -90,12 +93,55 @@ sudo /opt/btrfs-base-backup-script/scripts/backup.sh
 3. 创建带有 ISO 8601 时间戳的只读快照
 4. 卸载并清理
 
-### 传输快照
+### 管理快照
 
-将快照传输到外部存储：
+使用 `bbbsctl.sh` 控制工具管理快照：
+
+**查看帮助信息**：
 
 ```bash
-sudo /opt/btrfs-base-backup-script/scripts/transfer.sh /path/to/destination
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh help
+```
+
+**列出所有快照**：
+
+```bash
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh list
+```
+
+**计算快照大小**：
+
+```bash
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh size 2025-12-01T10:30:00+08:00
+```
+
+**恢复快照**：
+
+```bash
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh restore 2025-12-01T10:30:00+08:00 /mnt/restored
+```
+
+**删除快照**：
+
+```bash
+# 删除指定快照
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh delete --snapshot 2025-12-01T10:30:00+08:00
+
+# 保留最近 30 天的快照，删除更早的
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh delete --keep-days 30
+
+# 保留最新的 10 个快照，删除更早的
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh delete --keep-count 10
+
+# 删除所有快照（需要确认）
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh delete --all
+```
+
+**传输快照**：
+
+```bash
+# 将快照传输到外部存储
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh transfer /mnt/external/backups
 ```
 
 脚本会自动：
@@ -113,7 +159,7 @@ sudo /opt/btrfs-base-backup-script/scripts/transfer.sh /path/to/destination
 systemctl status btrfs-base-backup.timer
 ```
 
-检查最近的备份日志：
+查看最近的备份日志：
 
 ```bash
 journalctl -u btrfs-base-backup.service -n 50
@@ -160,7 +206,7 @@ btrfs-base-backup-script/
 │   └── btrfs-base-backup.conf        # 配置文件
 ├── scripts/
 │   ├── backup.sh                      # 快照创建脚本
-│   └── transfer.sh                    # 增量传输脚本
+│   └── bbbsctl.sh                     # 快照管理控制工具
 └── systemd/
     ├── btrfs-base-backup.service     # Systemd 服务单元
     └── btrfs-base-backup.timer       # Systemd 定时器单元
@@ -168,20 +214,20 @@ btrfs-base-backup-script/
 
 ## 🔍 工作原理
 
-### 备份过程
+### 快照创建过程 (`backup.sh`)
 
 1. **设备检测**：识别包含源路径的 Btrfs 设备
 2. **根目录挂载**：将 Btrfs 根目录（`subvol=/`）挂载到临时挂载点
 3. **快照创建**：创建带有 ISO 8601 时间戳的只读快照
 4. **清理**：卸载临时挂载点
 
-### 传输过程
+### 快照管理过程 (`bbbsctl.sh`)
 
-1. **挂载验证**：确保 Btrfs 根目录可访问
-2. **快照发现**：扫描可用的快照
-3. **父快照检测**：识别用于增量传输的共同父快照
-4. **传输执行**：使用 `btrfs send/receive` 进行高效的数据传输
-5. **自动清理**：如果由脚本挂载，则卸载
+- **列出快照**：扫描备份目录中的所有快照并显示快照信息
+- **计算大小**：计算指定快照占用的磁盘空间
+- **恢复快照**：将快照恢复到指定位置
+- **删除快照**：根据各种条件删除快照（天数、数量、指定快照或全部）
+- **传输快照**：执行增量或完整传输到外部存储
 
 ## 🛠️ 高级用法
 
@@ -198,8 +244,8 @@ sudo systemctl edit btrfs-base-backup.timer
 为不同的子卷创建多个配置文件和服务单元：
 
 ```bash
-cp config/btrfs-base-backup.conf config/btrfs-base-backup-home.conf
-cp systemd/btrfs-base-backup.service systemd/btrfs-base-backup-home.service
+sudo cp config/btrfs-base-backup.conf config/btrfs-base-backup-home.conf
+sudo cp systemd/btrfs-base-backup.service systemd/btrfs-base-backup-home.service
 # 相应地编辑配置和服务文件
 ```
 
@@ -208,8 +254,27 @@ cp systemd/btrfs-base-backup.service systemd/btrfs-base-backup-home.service
 结合 SSH 进行远程备份：
 
 ```bash
+# 方法 1: 直接使用 btrfs send/receive 通过 SSH
 sudo btrfs send /mnt/rootfs/backups/2025-12-01T10:00:00+08:00 | \
   ssh user@remote "btrfs receive /mnt/backup"
+
+# 方法 2: 先挂载远程目录，然后使用 bbbsctl 传输
+sudo sshfs user@remote:/mnt/backup /mnt/remote
+sudo /opt/btrfs-base-backup-script/scripts/bbbsctl.sh transfer /mnt/remote
+```
+
+### 定期清理旧快照
+
+创建定期清理任务，保留最近 30 天的快照：
+
+```bash
+# 创建清理脚本
+echo '#!/bin/bash' | sudo tee /opt/btrfs-base-backup-script/scripts/cleanup.sh
+echo '/opt/btrfs-base-backup-script/scripts/bbbsctl.sh delete --keep-days 30' | sudo tee -a /opt/btrfs-base-backup-script/scripts/cleanup.sh
+sudo chmod +x /opt/btrfs-base-backup-script/scripts/cleanup.sh
+
+# 添加到 crontab（每周日凌晨 3 点执行）
+(sudo crontab -l 2>/dev/null; echo "0 3 * * 0 /opt/btrfs-base-backup-script/scripts/cleanup.sh") | sudo crontab -
 ```
 
 ## 🤝 贡献
