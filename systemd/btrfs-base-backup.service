@@ -1,0 +1,7 @@
+[Unit]
+Description=Btrfs Base Backup Service
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/btrfs-base-backup-script/scripts/backup.sh
