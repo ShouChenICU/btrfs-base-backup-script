@@ -46,17 +46,17 @@ The project consists of two main components:
 
 ### Quick Install
 
-1. **Clone the repository**:
+1. **Clone the repository** (recommended to install to `/opt`):
 
    ```bash
-   git clone https://github.com/ShouChenICU/btrfs-base-backup-script.git
-   cd btrfs-base-backup-script
+   sudo git clone https://github.com/ShouChenICU/btrfs-base-backup-script.git /opt/btrfs-base-backup-script
+   cd /opt/btrfs-base-backup-script
    ```
 
 2. **Make scripts executable**:
 
    ```bash
-   chmod +x scripts/*.sh
+   sudo chmod +x scripts/*.sh
    ```
 
 3. **Configure backup settings**:
@@ -80,7 +80,7 @@ The project consists of two main components:
 Create a snapshot manually:
 
 ```bash
-sudo ./scripts/backup.sh
+sudo /opt/btrfs-base-backup-script/scripts/backup.sh
 ```
 
 This will:
@@ -95,7 +95,7 @@ This will:
 Transfer snapshots to external storage:
 
 ```bash
-sudo ./scripts/transfer.sh /path/to/destination
+sudo /opt/btrfs-base-backup-script/scripts/transfer.sh /path/to/destination
 ```
 
 The script automatically:
@@ -153,7 +153,9 @@ MOUNT_POINT="/mnt/rootfs"
 
 ```
 btrfs-base-backup-script/
-├── README.md                          # This file
+├── README.md                          # English documentation
+├── README_zh.md                       # Chinese documentation
+├── LICENSE                            # MIT License
 ├── config/
 │   └── btrfs-base-backup.conf        # Configuration file
 ├── scripts/

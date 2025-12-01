@@ -1,4 +1,4 @@
-# 📦 Btrfs 基础备份脚本
+# 📦 基于 Btrfs 的备份脚本
 
 <div align="center">
 
@@ -46,17 +46,17 @@
 
 ### 快速安装
 
-1. **克隆仓库**：
+1. **克隆仓库**（推荐安装到 `/opt` 目录）：
 
    ```bash
-   git clone https://github.com/ShouChenICU/btrfs-base-backup-script.git
-   cd btrfs-base-backup-script
+   sudo git clone https://github.com/ShouChenICU/btrfs-base-backup-script.git /opt/btrfs-base-backup-script
+   cd /opt/btrfs-base-backup-script
    ```
 
 2. **设置脚本可执行权限**：
 
    ```bash
-   chmod +x scripts/*.sh
+   sudo chmod +x scripts/*.sh
    ```
 
 3. **配置备份设置**：
@@ -80,7 +80,7 @@
 手动创建快照：
 
 ```bash
-sudo ./scripts/backup.sh
+sudo /opt/btrfs-base-backup-script/scripts/backup.sh
 ```
 
 脚本将会：
@@ -95,7 +95,7 @@ sudo ./scripts/backup.sh
 将快照传输到外部存储：
 
 ```bash
-sudo ./scripts/transfer.sh /path/to/destination
+sudo /opt/btrfs-base-backup-script/scripts/transfer.sh /path/to/destination
 ```
 
 脚本会自动：
